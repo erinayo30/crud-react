@@ -1,13 +1,14 @@
 import React from 'react'
 
 export const TodoList = (props) => {
-    const { id, title, created_at, handleDelete } = props;
+    const { id, title, created_at, handleDelete, handleEditMode } = props;
   return (
      <div className="group flex justify-between py-3 px-2.5 rounded-lg hover:bg-gray-400 ">
   <a href={`${id}`}> {`${title}`} {`${created_at}`}</a>
   <section className=" gap-4 hidden group-hover:flex">
     <button 
     // onClick="handleEditMode('${todo.id}')"
+    onClick={() =>handleEditMode(id)}
     >
       <svg xmlns="http://www.w3.org/2000/svg" 
       fill="none" 

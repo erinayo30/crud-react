@@ -4,10 +4,13 @@ import { getLocalStorage, setLocalStorage } from './utils/local-storage';
 import { TodoLoader } from './components/TodoLoader';
 import { TodoList } from './components/TodoList';
 import { sortedTodosByCreated_At } from './utils/todos';
+import { showConfirmModal } from './utils/showModal';
+
 
  const todo_ls_name = process.env.REACT_APP_TODO_LOCAL_STORAGE_NAME
 
 const App = () => {
+  const [isEditMode, setIsEditMode]= useState(false)
   const [loadingTodos, setLoadingTodos] =useState(true)
   const [todos, setTodos] = useState([])
   const [todoInput, setTodoInput] = useState("");
@@ -16,7 +19,7 @@ const App = () => {
     errorMessage: null,
     errorType:null
   });
-
+  const [todoIdToUpdate, setTodoIdToUpdate] = useState(null)
  
 // CREATE TODO Function
   const createTodo = (e) => {
@@ -74,23 +77,23 @@ console.log(process.env.REACT_APP_TODO_LOCAL_STORAGE_NAME)
 
                     // DELETE TODOs
                     const handleDelete  = (id) => {
-                        // const deleteTodo = () => {
-                        //     // get todo ls
+                         const deleteTodo = () => {
+                          // get todo ls
                             const todo_db = getLocalStorage(todo_ls_name);
-                        //     // fliter out todo that doesn't match the id
+                          // fliter out todo that doesn't match the id
                             const new_todo_db = todo_db.filter((todo) => todo.id !== id);
-                        //     // set the new todos without the todo that match the id to the ls
+                          // set the new todos without the todo that match the id to the ls
                             setLocalStorage(todo_ls_name, new_todo_db);
                             fetchTodos(); 
-                        // };
-                    //     showConfirmModeal({
-                    //         title: 'Delete Todo',
-                    //         text: 'Do you want to continue',
-                    //         icon: 'warning',
-                    //         confirmButtonText: 'Delete',
-                    //         showCancelButton: true,
-                    //         cb: deleteTodo,
-                    //     })
+                        };
+                        showConfirmModal({
+                            title: 'Delete Todo',
+                            text: 'Do you want to continue',
+                            icon: 'warning',
+                            confirmButtonText: 'Delete',
+                            showCancelButton: true,
+                            cb: deleteTodo,
+                        })
                  };
 
 // READ TODO Function
@@ -105,16 +108,48 @@ setLoadingTodos(false)
   
 };
 
-console.log(todos)
+const handleEditMode = (id) =>{
+  setIsEditMode(true)
+  setTodoIdToUpdate(id)
+  const todo_db =getLocalStorage(todo_ls_name)
+  const todo_to_update = todo_db.find((todo) => todo.id === id) 
 
-// const sortedTodos = sortedTodosByCreated_At(todo_db);
+  if(!todo_to_update) {
+    return;
+  }
+  setTodoInput(todo_to_update.title);
+
+};
+
+const updateTodo = () => {
+  if (!todoInput) {
+   return setFormError({
+      isError:true,
+      errorMessage: "Todo title cannot be empty",
+    });
+  };
+
+  // const todo_to_update = updateTodoBtn.getAttribute("todo_id_to_update")
+  const todo_db = getLocalStorage(todo_ls_name);
+  const update_todo_db = todo_db.map((todo) =>{
+    if(todo.id === todo_id_to_update){
+      return {...todo, title, created_at: todoInput.value};
+    }else{
+      return todo
+    }
+  });
+  
+  setDb(DB_NMAE, update_todo_db);
+  fetchTodos();
+  resetFormInput();
+  updateTodoBtn.classList.add("hidden")
+  const addTodoBtn = document.querySelector("#add_todo_btn")
+  addTodoBtn.classList.remove("hidden")
+};
 
 useEffect(() => {
 fetchTodos();
 }, []);
-
-
-
 
   return (
     <div>
@@ -136,18 +171,23 @@ fetchTodos();
               value={todoInput}
               onChange={(e) => setTodoInput(e.target.value)}
             />
-            <button className="bg-blue-600 rounded-lg px-2.5 text-sm text-white w-[100px]"
-              onClick ={createTodo}
-              type="button"
-              id="add_todo_btn">
-              Add todo
-            </button>
-            <button className="hidden bg-red-600 rounded-lg px-2.5 text-sm text-white w-[100px]"
+            { isEditMode? (
+              <button className=" bg-red-600 rounded-lg px-2.5 text-sm text-white w-[100px]"
               // onClick={updateTodo}
               type="button"
               id="update_todo_btn">
               Update
             </button>
+            ) :(
+            <button className="bg-blue-600 rounded-lg px-2.5 text-sm text-white w-[100px]"
+            onClick ={createTodo}
+            type="button"
+            id="add_todo_btn">
+              Add todo
+            </button>
+            
+          )}
+           
           </form>
           {formError && formError.isError && (
             <span className='text-red-500'>{formError.errorMessage}</span>
@@ -161,8 +201,6 @@ fetchTodos();
           {loadingTodos ? ( 
             <section className='flex flex-col gap-2'>
             <TodoLoader />
-           <TodoLoader />
-            <TodoLoader />
             </section>
           ) : (
           <>
@@ -174,6 +212,7 @@ fetchTodos();
                created_at={created_at} 
                key={`todo-list-${id}`}
                handleDelete={handleDelete}
+               handleEditMode={handleEditMode}
                />
                );
             })}
